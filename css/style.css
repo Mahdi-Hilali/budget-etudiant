@@ -186,6 +186,10 @@ li {
 }
 
 /* ----- Graphique ----- */
+/* Taille limitée et centré pour ne pas prendre toute la page */
 #graphique-section canvas {
-  max-width: 100%;
+  max-width: 350px;
+  max-height: 350px;
+  margin: 0 auto;
+  display: block;
 }
