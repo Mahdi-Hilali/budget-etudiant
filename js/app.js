@@ -1,47 +1,44 @@
+
 /*
   app.js : logique principale de BudgetÉtudiant.
-  - ajoute et supprime des opérations (revenus / dépenses)
-  - calcule les totaux et le "reste à vivre par jour"
-  - affiche la liste et le résumé
-  - demande à chart.js de mettre à jour le graphique
-
-  Dépend de storage.js (chargerOperations, sauvegarderOperations)
-  et de chart.js (mettreAJourGraphique).
 */
 
-// ----- Catégories proposées selon le type d'opération -----
 const CATEGORIES = {
   revenu: ["Bourse", "Job étudiant", "Aide famille", "Autre revenu"],
   depense: ["Loyer", "Courses", "Transport", "Loisirs", "Santé", "Autre dépense"]
 };
 
-// ----- Liste des opérations en mémoire (chargée depuis le localStorage) -----
-let operations = chargerOperations();
+let operations = [];
 
-// ----- Éléments de la page qu'on va manipuler -----
 const formulaire = document.getElementById("formulaire");
 const champType = document.getElementById("type");
 const champNom = document.getElementById("nom");
 const champMontant = document.getElementById("montant");
 const champCategorie = document.getElementById("categorie");
+const champDate = document.getElementById("date");
 const listeHtml = document.getElementById("liste");
 const messageVide = document.getElementById("vide");
 
-/**
- * Formate un nombre en euros, ex : 1234.5 -> "1 234,50 €".
- * @param {number} valeur - le montant
- * @returns {string} le montant formaté
- */
 function formaterEuros(valeur) {
-  return valeur.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
+  return valeur.toLocaleString("fr-FR", {
+    style: "currency",
+    currency: "EUR"
+  });
 }
 
-/**
- * Remplit la liste déroulante des catégories selon le type choisi.
- */
+function aujourdhui() {
+  const d = new Date();
+
+  return d.getFullYear() + "-" +
+    String(d.getMonth() + 1).padStart(2, "0") + "-" +
+    String(d.getDate()).padStart(2, "0");
+}
+
 function remplirCategories() {
   const type = champType.value;
+
   champCategorie.innerHTML = "";
+
   CATEGORIES[type].forEach(function (categorie) {
     const option = document.createElement("option");
     option.value = categorie;
@@ -50,94 +47,97 @@ function remplirCategories() {
   });
 }
 
-/**
- * Calcule le nombre de jours restants dans le mois (aujourd'hui inclus).
- * @returns {number} jours restants (au minimum 1)
- */
 function joursRestantsDansLeMois() {
-  const aujourdhui = new Date();
-  // Le jour 0 du mois suivant = dernier jour du mois en cours
-  const dernierJour = new Date(aujourdhui.getFullYear(), aujourdhui.getMonth() + 1, 0).getDate();
-  return dernierJour - aujourdhui.getDate() + 1;
+  const maintenant = new Date();
+
+  const dernierJour = new Date(
+    maintenant.getFullYear(),
+    maintenant.getMonth() + 1,
+    0
+  ).getDate();
+
+  return dernierJour - maintenant.getDate() + 1;
 }
 
-/**
- * Calcule le reste à vivre par jour.
- * @param {number} solde - revenus - dépenses
- * @param {number} joursRestants - jours restants dans le mois
- * @returns {number} budget disponible par jour
- */
-function resteAVivreParJour(solde, joursRestants) {
-  return solde / joursRestants;
-}
-
-/**
- * Ajoute une nouvelle opération, la sauvegarde et rafraîchit l'affichage.
- * @param {Event} evenement - l'envoi du formulaire
- */
 function ajouterOperation(evenement) {
-  evenement.preventDefault(); // empêche le rechargement de la page
+  evenement.preventDefault();
 
   const montant = parseFloat(champMontant.value);
   const nom = champNom.value.trim();
 
-  // Vérification simple : on refuse un nom vide ou un montant invalide
-  if (nom === "" || isNaN(montant) || montant <= 0) {
+  if (
+    nom === "" ||
+    isNaN(montant) ||
+    montant <= 0 ||
+    champDate.value === ""
+  ) {
     return;
   }
 
   const operation = {
-    id: Date.now(),            // identifiant unique (basé sur l'heure)
-    type: champType.value,     // "revenu" ou "depense"
+    id: Date.now(),
+    type: champType.value,
     nom: nom,
     montant: montant,
-    categorie: champCategorie.value
+    categorie: champCategorie.value,
+    date: champDate.value
   };
 
   operations.push(operation);
+
   sauvegarderOperations(operations);
 
-  formulaire.reset();          // vide le formulaire
-  remplirCategories();         // remet les catégories du type par défaut
+  formulaire.reset();
+
+  remplirCategories();
+
+  champDate.value = aujourdhui();
+
   afficher();
 }
 
-/**
- * Supprime une opération grâce à son identifiant.
- * @param {number} id - identifiant de l'opération à supprimer
- */
 function supprimerOperation(id) {
-  // On garde toutes les opérations SAUF celle qui a cet identifiant
   operations = operations.filter(function (op) {
     return op.id !== id;
   });
+
   sauvegarderOperations(operations);
+
   afficher();
 }
 
-/**
- * Affiche la liste des opérations dans la page.
- */
 function afficherListe() {
   listeHtml.innerHTML = "";
 
-  // Message "aucune opération" visible seulement si la liste est vide
-  messageVide.style.display = operations.length === 0 ? "block" : "none";
+  messageVide.style.display =
+    operations.length === 0 ? "block" : "none";
 
-  operations.forEach(function (op) {
+  const triees = operations.slice().sort(function (a, b) {
+    return b.date.localeCompare(a.date) || b.id - a.id;
+  });
+
+  triees.forEach(function (op) {
     const ligne = document.createElement("li");
 
     const texte = document.createElement("span");
-    texte.textContent = op.nom + " (" + op.categorie + ")";
+
+    texte.textContent =
+      op.date + " · " + op.nom + " (" + op.categorie + ")";
 
     const montant = document.createElement("span");
+
     const signe = op.type === "revenu" ? "+" : "-";
+
     montant.textContent = signe + formaterEuros(op.montant);
-    montant.className = op.type === "revenu" ? "montant-revenu" : "montant-depense";
+
+    montant.className =
+      op.type === "revenu" ? "montant-revenu" : "montant-depense";
 
     const bouton = document.createElement("button");
+
     bouton.textContent = "Supprimer";
     bouton.className = "btn-supprimer";
+
     bouton.addEventListener("click", function () {
       supprimerOperation(op.id);
     });
@@ -145,34 +145,98 @@ function afficherListe() {
     ligne.appendChild(texte);
     ligne.appendChild(montant);
     ligne.appendChild(bouton);
+
     listeHtml.appendChild(ligne);
   });
 }
 
-/**
- * Calcule et affiche les totaux, le solde et l'alerte "reste à vivre par jour".
- */
+/*
+  CALCUL DU RÉSUMÉ ET DE L'ÉCONOMIE
+*/
+
 function afficherResume() {
+
   let totalRevenus = 0;
   let totalDepenses = 0;
 
   operations.forEach(function (op) {
     if (op.type === "revenu") {
-      totalRevenus += op.montant;
+      totalRevenus += Number(op.montant);
     } else {
-      totalDepenses += op.montant;
+      totalDepenses += Number(op.montant);
     }
   });
 
   const solde = totalRevenus - totalDepenses;
 
-  document.getElementById("total-revenus").textContent = formaterEuros(totalRevenus);
-  document.getElementById("total-depenses").textContent = formaterEuros(totalDepenses);
-  document.getElementById("solde").textContent = formaterEuros(solde);
+  document.getElementById("total-revenus").textContent =
+    formaterEuros(totalRevenus);
+
+  document.getElementById("total-depenses").textContent =
+    formaterEuros(totalDepenses);
+
+  document.getElementById("solde").textContent =
+    formaterEuros(solde);
+
+  // ÉVALUATION DES DÉPENSES
+
+  const economie = document.getElementById("economie");
+  const economieDetail = document.getElementById("economie-detail");
+  const carteEconomie = economie.parentElement;
+
+  carteEconomie.classList.remove(
+    "eco-bon",
+    "eco-moyen",
+    "eco-eleve",
+    "eco-danger"
+  );
+
+  if (totalRevenus === 0) {
+
+    if (totalDepenses === 0) {
+      economie.textContent = "--";
+      economieDetail.textContent = "En attente de données";
+      carteEconomie.classList.add("eco-moyen");
+    } else {
+      economie.textContent = "Attention";
+      economieDetail.textContent = "Aucun revenu enregistré";
+      carteEconomie.classList.add("eco-danger");
+    }
+
+  } else {
+
+    const pourcentage = (totalDepenses / totalRevenus) * 100;
+
+    economieDetail.textContent =
+      pourcentage.toFixed(1).replace(".", ",") +
+      " % de tes revenus dépensés";
+
+    if (pourcentage < 50) {
+
+      economie.textContent = "Économique";
+      carteEconomie.classList.add("eco-bon");
+
+    } else if (pourcentage < 80) {
+
+      economie.textContent = "Modéré";
+      carteEconomie.classList.add("eco-moyen");
+
+    } else if (pourcentage <= 100) {
+
+      economie.textContent = "Élevé";
+      carteEconomie.classList.add("eco-eleve");
+
+    } else {
+
+      economie.textContent = "Dépassement";
+      carteEconomie.classList.add("eco-danger");
+    }
+  }
+
+  // ALERTE RESTE À VIVRE
 
   const alerte = document.getElementById("alerte");
 
-  // Aucune donnée : message neutre
   if (operations.length === 0) {
     alerte.textContent = "Ajoute tes revenus et dépenses.";
     alerte.className = "alerte";
@@ -180,30 +244,54 @@ function afficherResume() {
   }
 
   const jours = joursRestantsDansLeMois();
-  const parJour = resteAVivreParJour(solde, jours);
+  const parJour = solde / jours;
 
   if (solde < 0) {
-    // Solde négatif : alerte rouge
-    alerte.textContent = "⚠️ Attention, tu es à découvert de " + formaterEuros(Math.abs(solde)) + " ce mois-ci !";
+
+    alerte.textContent =
+      "⚠️ Attention, tu es à découvert de " +
+      formaterEuros(Math.abs(solde)) + " ce mois-ci !";
+
     alerte.className = "alerte danger";
+
   } else {
-    // Solde positif : alerte verte avec le budget par jour
-    alerte.textContent = "✅ Il te reste " + formaterEuros(parJour) + " par jour pendant " + jours + " jour(s).";
+
+    alerte.textContent =
+      "✅ Il te reste " + formaterEuros(parJour) +
+      " par jour pendant " + jours + " jour(s).";
+
     alerte.className = "alerte ok";
   }
 }
 
-/**
- * Met à jour toute la page : liste, résumé et graphique.
- */
 function afficher() {
   afficherListe();
   afficherResume();
-  mettreAJourGraphique(operations); // fonction définie dans chart.js
+
+  mettreAJourGraphique(operations);
+  mettreAJourCourbe(operations);
 }
 
-// ----- Démarrage de l'application -----
-champType.addEventListener("change", remplirCategories); // change les catégories selon le type
+function demarrer() {
+  operations = chargerOperations();
+
+  operations.forEach(function (op) {
+    if (!op.date) {
+      op.date = aujourdhui();
+    }
+  });
+
+  sauvegarderOperations(operations);
+
+  remplirCategories();
+
+  champDate.value = aujourdhui();
+
+  afficher();
+}
+
+// ÉCOUTEURS
+
+champType.addEventListener("change", remplirCategories);
+
 formulaire.addEventListener("submit", ajouterOperation);
-remplirCategories();
-afficher();

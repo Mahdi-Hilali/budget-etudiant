@@ -1,18 +1,8 @@
+
 <!DOCTYPE html>
-<!--
-  index.html : page unique de l'application BudgetÉtudiant.
-  Elle contient :
-    - le formulaire de saisie (revenus / dépenses)
-    - la liste des opérations
-    - le résumé (totaux + "reste à vivre par jour")
-    - le graphique de répartition des dépenses
-  La logique est dans js/app.js, la sauvegarde dans js/storage.js
-  et le graphique dans js/chart.js.
--->
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <!-- Permet un affichage correct sur téléphone (responsive) -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BudgetÉtudiant</title>
   <link rel="stylesheet" href="css/style.css">
@@ -20,37 +10,54 @@
 <body>
 
   <header>
+    <p id="nom-profil"></p>
+    <button type="button" id="btn-deconnexion" class="btn-deco">Déconnexion</button>
     <h1>💶 BudgetÉtudiant</h1>
     <p>Finis-tu le mois dans le vert ?</p>
   </header>
 
   <main>
 
-    <!-- FONCTIONNALITÉ 3 : alerte "reste à vivre par jour" + totaux -->
+    <!-- RÉSUMÉ -->
     <section id="resume">
       <h2>Résumé du mois</h2>
+
       <div class="cartes">
+
         <div class="carte">
           <span>Revenus</span>
           <strong id="total-revenus">0,00 €</strong>
         </div>
+
         <div class="carte">
           <span>Dépenses</span>
           <strong id="total-depenses">0,00 €</strong>
         </div>
+
         <div class="carte">
           <span>Solde</span>
           <strong id="solde">0,00 €</strong>
         </div>
+
+        <div class="carte carte-economie">
+          <span>Économie</span>
+          <strong id="economie">--</strong>
+          <small id="economie-detail">En attente de données</small>
+        </div>
+
       </div>
-      <!-- Le texte et la couleur de cette alerte changent depuis app.js -->
-      <p id="alerte" class="alerte">Ajoute tes revenus et dépenses.</p>
+
+      <p id="alerte" class="alerte">
+        Ajoute tes revenus et dépenses.
+      </p>
     </section>
 
-    <!-- FONCTIONNALITÉ 1 : formulaire de saisie -->
+    <!-- FORMULAIRE -->
     <section id="saisie">
       <h2>Ajouter une opération</h2>
+
       <form id="formulaire">
+
         <label for="type">Type</label>
         <select id="type">
           <option value="revenu">Revenu</option>
@@ -64,38 +71,90 @@
         <input type="number" id="montant" min="0.01" step="0.01" placeholder="Ex : 25" required>
 
         <label for="categorie">Catégorie</label>
-        <select id="categorie">
-          <!-- Les catégories sont remplies par app.js selon le type -->
-        </select>
+        <select id="categorie"></select>
 
-        <button type="submit">Ajouter</button>
+        <label for="date">Date</label>
+        <input type="date" id="date" required>
+
+        <button type="submit">Ajouter une opération</button>
+
       </form>
     </section>
 
-    <!-- Liste des opérations (avec bouton supprimer) -->
+    <!-- LISTE -->
     <section id="liste-section">
       <h2>Mes opérations</h2>
       <ul id="liste"></ul>
       <p id="vide">Aucune opération pour le moment.</p>
     </section>
 
-    <!-- FONCTIONNALITÉ 2 : graphique de répartition des dépenses -->
+    <!-- GRAPHIQUE CIRCULAIRE -->
     <section id="graphique-section">
       <h2>Répartition des dépenses</h2>
       <canvas id="graphique"></canvas>
     </section>
 
+    <!-- COURBE -->
+    <section id="courbe-section">
+      <h2>Évolution du solde</h2>
+      <canvas id="graphique-courbe"></canvas>
+    </section>
+
   </main>
 
+  <!-- AUTHENTIFICATION -->
+  <div id="ecran-auth" class="ecran-auth">
+
+    <div class="carte-auth">
+
+      <h2>💶 BudgetÉtudiant</h2>
+
+      <div class="onglets-auth">
+        <button type="button" class="onglet-auth actif" data-mode-auth="connexion">
+          Connexion
+        </button>
+
+        <button type="button" class="onglet-auth" data-mode-auth="inscription">
+          Inscription
+        </button>
+      </div>
+
+      <form id="form-auth">
+
+        <label for="pseudo">Pseudo</label>
+        <input type="text" id="pseudo" required autocomplete="off">
+
+        <label for="code">Code (4 chiffres)</label>
+        <input type="password" id="code" inputmode="numeric"
+          pattern="[0-9]{4}" maxlength="4" required>
+
+        <p id="message-auth" class="message-auth"></p>
+
+        <button type="submit" id="btn-auth">Se connecter</button>
+
+      </form>
+
+      <p class="note-auth">
+        Profil stocké uniquement sur cet appareil.
+        Aucune donnée envoyée.
+      </p>
+
+    </div>
+  </div>
+
   <footer>
-    <p>Projet scolaire. Les données restent dans ton navigateur (localStorage).</p>
+    <p>Projet scolaire – BudgetÉtudiant © 2026</p>
+    <p>Tes données restent dans ton navigateur.</p>
   </footer>
 
-  <!-- Chart.js depuis un CDN (bibliothèque de graphiques) -->
+  <!-- BIBLIOTHÈQUE CHART.JS -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <!-- Nos scripts : l'ordre est important (storage, chart, puis app) -->
+
+  <!-- SCRIPTS -->
   <script src="js/storage.js"></script>
   <script src="js/chart.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/auth.js"></script>
+
 </body>
 </html>

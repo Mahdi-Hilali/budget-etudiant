@@ -1,38 +1,49 @@
 /*
-  storage.js : sauvegarde des opérations dans le navigateur.
-  On utilise localStorage : les données restent sur l'ordinateur de l'utilisateur,
-  rien n'est envoyé sur internet.
+  storage.js : sauvegarde dans le navigateur (localStorage).
+  Chaque profil a ses propres opérations. Rien n'est envoyé sur internet.
 */
-
-// Nom de la "case" dans le localStorage où on range nos données
-const CLE_STOCKAGE = "budgetEtudiant";
+const CLE_PROFILS = "budgetProfils";         // liste des profils
+const CLE_SESSION = "budgetProfilActif";     // profil connecté
+let profilActif = null;                      // pseudo du profil connecté
 
 /**
- * Lit la liste des opérations sauvegardées.
- * @returns {Array} la liste des opérations (tableau vide s'il n'y en a pas)
+ * Lit la liste des profils.
+ * @returns {Array} les profils (tableau vide s'il n'y en a pas)
  */
-function chargerOperations() {
-  const texte = localStorage.getItem(CLE_STOCKAGE);
-
-  // Si rien n'est sauvegardé, on renvoie une liste vide
-  if (texte === null) {
-    return [];
-  }
-
-  // Le localStorage ne stocke que du texte : on le retransforme en tableau
+function chargerProfils() {
   try {
-    return JSON.parse(texte);
+    return JSON.parse(localStorage.getItem(CLE_PROFILS)) || [];
   } catch (erreur) {
-    // Si les données sont abîmées, on repart de zéro plutôt que de planter
     return [];
   }
 }
 
 /**
- * Sauvegarde la liste des opérations.
+ * Sauvegarde la liste des profils.
+ * @param {Array} profils - la liste complète
+ */
+function sauvegarderProfils(profils) {
+  localStorage.setItem(CLE_PROFILS, JSON.stringify(profils));
+}
+
+/**
+ * Lit les opérations du profil connecté.
+ * @returns {Array} les opérations (tableau vide s'il n'y en a pas)
+ */
+function chargerOperations() {
+  if (!profilActif) return [];
+  try {
+    return JSON.parse(localStorage.getItem("budgetOperations_" + profilActif)) || [];
+  } catch (erreur) {
+    return [];
+  }
+}
+
+/**
+ * Sauvegarde les opérations du profil connecté.
  * @param {Array} operations - la liste complète à sauvegarder
  */
 function sauvegarderOperations(operations) {
-  // On transforme le tableau en texte (JSON) pour pouvoir le stocker
-  localStorage.setItem(CLE_STOCKAGE, JSON.stringify(operations));
+  if (!profilActif) return;
+  localStorage.setItem("budgetOperations_" + profilActif, JSON.stringify(operations));
 }
